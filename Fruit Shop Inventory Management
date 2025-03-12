@@ -20,7 +20,6 @@ class FruitShopApp:
         self.cursor = self.conn.cursor()
         self.create_table()
 
-        # UI Components
         self.setup_ui()
         self.view_inventory()
 
@@ -38,7 +37,6 @@ class FruitShopApp:
         self.conn.commit()
 
     def setup_ui(self):
-        # Update label font and color
         label_font = ('Helvetica', 12, 'bold')
        
         self.name_label = tk.Label(self.root, text="Fruit Name:", font=label_font, bg="#e6f7ff")
@@ -154,7 +152,6 @@ class FruitShopApp:
             return
         item_id = self.fruit_table.item(selected_item[0])["values"][0]
        
-        # Populate the input fields with the selected item data
         name = self.fruit_table.item(selected_item[0])["values"][1]
         price = self.fruit_table.item(selected_item[0])["values"][2]
         stock = self.fruit_table.item(selected_item[0])["values"][3]
@@ -172,7 +169,6 @@ class FruitShopApp:
         self.type_entry.delete(0, tk.END)
         self.type_entry.insert(0, type_)
        
-        # Change the button to update the selected item
         self.add_button.config(text="Update Fruit", command=lambda: self.confirm_update(item_id))
 
     def confirm_update(self, item_id):
@@ -195,7 +191,6 @@ class FruitShopApp:
             self.view_inventory()
             messagebox.showinfo("Success", "Fruit updated successfully!")
            
-            # Reset the button back to "Add Fruit"
             self.add_button.config(text="Add Fruit", command=self.add_fruit)
         else:
             messagebox.showerror("Input Error", "Please provide valid item details.")
