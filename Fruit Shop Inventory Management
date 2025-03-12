@@ -8,14 +8,14 @@ class FruitShopApp:
         self.root = root
         self.root.title("Fruit Shop Inventory Management")
         self.root.geometry("900x600")
-        self.root.configure(bg="#e6f7ff")  
+        self.root.configure(bg="purple")  
        
        
         self.conn = mysql.connector.connect(
             host="localhost",
             user="root", 
             password="root123",  
-            database="fruidb"  
+            database="fruitdb"  
         )
         self.cursor = self.conn.cursor()
         self.create_table()
@@ -44,7 +44,7 @@ class FruitShopApp:
         self.name_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
         self.name_entry.pack(pady=5)
 
-        self.price_label = tk.Label(self.root, text="Price ($):", font=label_font, bg="#e6f7ff")
+        self.price_label = tk.Label(self.root, text="Price_per_Kg (Rs.):", font=label_font, bg="#e6f7ff")
         self.price_label.pack(pady=5)
         self.price_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
         self.price_entry.pack(pady=5)
