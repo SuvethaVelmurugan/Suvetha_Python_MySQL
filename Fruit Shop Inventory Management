@@ -1,0 +1,238 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime
+import mysql.connector
+
+class FruitShopApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Fruit Shop Inventory Management")
+        self.root.geometry("900x600")
+        self.root.configure(bg="#e6f7ff")  
+       
+       
+        self.conn = mysql.connector.connect(
+            host="localhost",
+            user="root", 
+            password="root123",  
+            database="fruidb"  
+        )
+        self.cursor = self.conn.cursor()
+        self.create_table()
+
+        # UI Components
+        self.setup_ui()
+        self.view_inventory()
+
+    def create_table(self):
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fruit_inventory (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                price DECIMAL(10,2) NOT NULL,
+                stock INT NOT NULL,
+                type VARCHAR(255) NOT NULL,
+                date_added DATE NOT NULL
+            )
+        """)
+        self.conn.commit()
+
+    def setup_ui(self):
+        # Update label font and color
+        label_font = ('Helvetica', 12, 'bold')
+       
+        self.name_label = tk.Label(self.root, text="Fruit Name:", font=label_font, bg="#e6f7ff")
+        self.name_label.pack(pady=5)
+        self.name_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
+        self.name_entry.pack(pady=5)
+
+        self.price_label = tk.Label(self.root, text="Price ($):", font=label_font, bg="#e6f7ff")
+        self.price_label.pack(pady=5)
+        self.price_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
+        self.price_entry.pack(pady=5)
+
+        self.stock_label = tk.Label(self.root, text="Stock Quantity:", font=label_font, bg="#e6f7ff")
+        self.stock_label.pack(pady=5)
+        self.stock_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
+        self.stock_entry.pack(pady=5)
+
+        self.type_label = tk.Label(self.root, text="Fruit Type:", font=label_font, bg="#e6f7ff")
+        self.type_label.pack(pady=5)
+        self.type_entry = tk.Entry(self.root, font=('Arial', 12), bd=2, relief="solid")
+        self.type_entry.pack(pady=5)
+
+       
+        self.add_button = tk.Button(self.root, text="Add Fruit", font=('Arial', 14), bg="#4CAF50", fg="white", bd=0, relief="solid", command=self.add_fruit)
+        self.add_button.pack(pady=15)
+
+        
+        self.fruit_table = ttk.Treeview(self.root, columns=("ID", "Name", "Price", "Stock", "Type", "Date Added"), show="headings", height=6)
+        self.fruit_table.heading("ID", text="ID")
+        self.fruit_table.heading("Name", text="Fruit Name")
+        self.fruit_table.heading("Price", text="Price ($)")
+        self.fruit_table.heading("Stock", text="Stock Quantity")
+        self.fruit_table.heading("Type", text="Fruit Type")
+        self.fruit_table.heading("Date Added", text="Date Added")
+       
+       
+        self.fruit_table.tag_configure('oddrow', background="#f2f2f2")  # Light gray background for odd rows
+        self.fruit_table.tag_configure('evenrow', background="#ffffff")  # White background for even rows
+       
+        self.fruit_table.pack(pady=20)
+
+        
+        self.sell_button = tk.Button(self.root, text="Sell Item", font=('Arial', 12), bg="#FF9800", fg="white", bd=0, relief="solid", command=self.sell_item)
+        self.sell_button.pack(pady=5)
+
+        self.update_button = tk.Button(self.root, text="Update Item", font=('Arial', 12), bg="#2196F3", fg="white", bd=0, relief="solid", command=self.update_item)
+        self.update_button.pack(pady=5)
+
+        self.delete_button = tk.Button(self.root, text="Delete Item", font=('Arial', 12), bg="#F44336", fg="white", bd=0, relief="solid", command=self.delete_item)
+        self.delete_button.pack(pady=5)
+
+        self.view_button = tk.Button(self.root, text="View Price & Total Amount", font=('Arial', 12), bg="#673AB7", fg="white", bd=0, relief="solid", command=self.view_price_and_total)
+        self.view_button.pack(pady=5)
+
+    def add_fruit(self):
+        name = self.name_entry.get()
+        try:
+            price = float(self.price_entry.get())
+            stock = int(self.stock_entry.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid price and stock quantity.")
+            return
+        type_ = self.type_entry.get()
+        date_added = datetime.today().strftime('%Y-%m-%d')
+       
+        if name and price > 0 and stock >= 0 and type_:
+            self.cursor.execute("""
+                INSERT INTO fruit_inventory (name, price, stock, type, date_added)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (name, price, stock, type_, date_added))
+            self.conn.commit()
+            self.view_inventory()
+            messagebox.showinfo("Success", "Fruit added successfully!")
+        else:
+            messagebox.showerror("Input Error", "Please provide valid item details.")
+
+    def view_inventory(self):
+        for row in self.fruit_table.get_children():
+            self.fruit_table.delete(row)
+       
+        self.cursor.execute("SELECT * FROM fruit_inventory")
+        records = self.cursor.fetchall()
+        for i, item in enumerate(records):
+            if i % 2 == 0:
+                self.fruit_table.insert("", tk.END, values=item, tags='evenrow')
+            else:
+                self.fruit_table.insert("", tk.END, values=item, tags='oddrow')
+
+    def sell_item(self):
+        selected_item = self.fruit_table.selection()
+        if not selected_item:
+            messagebox.showerror("Selection Error", "Please select an item to sell.")
+            return
+        item_id = self.fruit_table.item(selected_item[0])["values"][0]
+        stock = self.fruit_table.item(selected_item[0])["values"][3]
+        if stock > 0:
+            new_stock = stock - 1
+            self.cursor.execute("""
+                UPDATE fruit_inventory
+                SET stock = %s
+                WHERE id = %s
+            """, (new_stock, item_id))
+            self.conn.commit()
+            self.view_inventory()
+            messagebox.showinfo("Success", "Item sold successfully!")
+        else:
+            messagebox.showerror("Stock Error", "This item is out of stock.")
+
+    def update_item(self):
+        selected_item = self.fruit_table.selection()
+        if not selected_item:
+            messagebox.showerror("Selection Error", "Please select an item to update.")
+            return
+        item_id = self.fruit_table.item(selected_item[0])["values"][0]
+       
+        # Populate the input fields with the selected item data
+        name = self.fruit_table.item(selected_item[0])["values"][1]
+        price = self.fruit_table.item(selected_item[0])["values"][2]
+        stock = self.fruit_table.item(selected_item[0])["values"][3]
+        type_ = self.fruit_table.item(selected_item[0])["values"][4]
+       
+        self.name_entry.delete(0, tk.END)
+        self.name_entry.insert(0, name)
+       
+        self.price_entry.delete(0, tk.END)
+        self.price_entry.insert(0, price)
+       
+        self.stock_entry.delete(0, tk.END)
+        self.stock_entry.insert(0, stock)
+       
+        self.type_entry.delete(0, tk.END)
+        self.type_entry.insert(0, type_)
+       
+        # Change the button to update the selected item
+        self.add_button.config(text="Update Fruit", command=lambda: self.confirm_update(item_id))
+
+    def confirm_update(self, item_id):
+        name = self.name_entry.get()
+        try:
+            price = float(self.price_entry.get())
+            stock = int(self.stock_entry.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid price and stock quantity.")
+            return
+        type_ = self.type_entry.get()
+
+        if name and price > 0 and stock >= 0 and type_:
+            self.cursor.execute("""
+                UPDATE fruit_inventory
+                SET name = %s, price = %s, stock = %s, type = %s
+                WHERE id = %s
+            """, (name, price, stock, type_, item_id))
+            self.conn.commit()
+            self.view_inventory()
+            messagebox.showinfo("Success", "Fruit updated successfully!")
+           
+            # Reset the button back to "Add Fruit"
+            self.add_button.config(text="Add Fruit", command=self.add_fruit)
+        else:
+            messagebox.showerror("Input Error", "Please provide valid item details.")
+
+    def delete_item(self):
+        selected_item = self.fruit_table.selection()
+        if not selected_item:
+            messagebox.showerror("Selection Error", "Please select an item to delete.")
+            return
+        item_id = self.fruit_table.item(selected_item[0])["values"][0]
+        self.cursor.execute("DELETE FROM fruit_inventory WHERE id = %s", (item_id,))
+        self.conn.commit()
+        self.view_inventory()
+        messagebox.showinfo("Success", "Item deleted successfully!")
+
+    def view_price_and_total(self):
+        selected_item = self.fruit_table.selection()
+        if not selected_item:
+            messagebox.showerror("Selection Error", "Please select an item to view price and total.")
+            return
+        item_name = self.fruit_table.item(selected_item[0])["values"][1]
+       
+        try:
+            item_price = float(self.fruit_table.item(selected_item[0])["values"][2])
+            stock_quantity = int(self.fruit_table.item(selected_item[0])["values"][3])
+        except ValueError:
+            messagebox.showerror("Data Error", "The price or stock quantity data is not valid.")
+            return
+
+        total_amount = item_price * stock_quantity
+       
+        messagebox.showinfo("Price & Total", f"Item: {item_name}\nPrice: ${item_price:.2f}\nStock: {stock_quantity}\nTotal Amount: ${total_amount:.2f}")
+
+    def close_connection(self):
+        self.conn.close()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = FruitShopApp(root)
+    root.mainloop()
