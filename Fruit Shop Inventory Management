@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 import mysql.connector
 
-class FruitShopApp:
+class FruitApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Fruit Shop Inventory Management")
@@ -239,6 +239,6 @@ class FruitShopApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = FruitShopApp(root)
+    app = FruitApp(root)
     root.mainloop()
 
